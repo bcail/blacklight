@@ -3,8 +3,8 @@ require 'spec_helper'
 describe CatalogController do
 
   describe "index action" do
-    
-    # In Rails 3 ActionDispatch::TestProcess#assigns() converts anything that 
+
+    # In Rails 3 ActionDispatch::TestProcess#assigns() converts anything that
     # descends from Hash to a HashWithIndifferentAccess. Therefore our Solr
     # response object gets replaced if we call assigns(:response)
     # Fixed by https://github.com/rails/rails/commit/185c3dbc6ab845edfc94e8d38ef5be11c417dd81
@@ -17,15 +17,42 @@ describe CatalogController do
         assigns(:response)
       end
     end
-    
+
     describe "with format :html" do
       let(:user_query) { 'history' } # query that will get results
 
       it "should have no search history if no search criteria" do
-        allow(controller).to receive(:get_search_results) 
+        allow(controller).to receive(:get_search_results)
         session[:history] = []
         get :index
         expect(session[:history]).to be_empty
+      end
+
+      describe "preferred view" do
+        it "should save the view choice" do
+          get :index, q: 'foo', view: 'gallery'
+          expect(session[:preferred_view]).to eq 'gallery'
+        end
+
+        context "when they have a preferred view" do
+          before do
+            session[:preferred_view] = 'gallery'
+          end
+
+          context "and no view is specified" do
+            it "should use the saved preference" do
+              get :index, q: 'foo'
+              expect(controller.params[:view]).to eq 'gallery'
+            end
+          end
+
+          context "and a view is specified" do
+            it "should use the saved preference" do
+              get :index, q: 'foo', view: 'list'
+              expect(controller.params[:view]).to eq 'list'
+            end
+          end
+        end
       end
 
       # check each user manipulated parameter

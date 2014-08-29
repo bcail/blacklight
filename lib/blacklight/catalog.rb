@@ -1,7 +1,7 @@
 # -*- encoding : utf-8 -*-
-module Blacklight::Catalog   
+module Blacklight::Catalog
   extend ActiveSupport::Concern
-  
+
   include Blacklight::Base
 
   SearchHistoryWindow = 100 # how many searches to save in session history
@@ -18,13 +18,13 @@ module Blacklight::Catalog
 
     record_search_parameters
   end
-  
+
     # get search results from the solr index
     def index
       (@response, @document_list) = get_search_results
-      
+
       respond_to do |format|
-        format.html { }
+        format.html { preferred_view }
         format.rss  { render :layout => false }
         format.atom { render :layout => false }
         format.json do
@@ -35,10 +35,10 @@ module Blacklight::Catalog
         document_export_formats(format)
       end
     end
-    
+
     # get single document from the solr index
     def show
-      @response, @document = get_solr_response_for_doc_id   
+      @response, @document = get_solr_response_for_doc_id
 
       respond_to do |format|
         format.html {setup_next_and_previous_documents}
@@ -49,10 +49,10 @@ module Blacklight::Catalog
         # export formats.
         @document.export_formats.each_key do | format_name |
           # It's important that the argument to send be a symbol;
-          # if it's a string, it makes Rails unhappy for unclear reasons. 
+          # if it's a string, it makes Rails unhappy for unclear reasons.
           format.send(format_name.to_sym) { render :text => @document.export_as(format_name), :layout => false }
         end
-        
+
       end
     end
 
@@ -80,14 +80,14 @@ module Blacklight::Catalog
 
       respond_to do |format|
         # Draw the facet selector for users who have javascript disabled:
-        format.html 
+        format.html
         format.json { render json: render_facet_list_as_json }
 
         # Draw the partial for the "more" facet modal window:
         format.js { render :layout => false }
       end
     end
-    
+
     # method to serve up XML OpenSearch description and JSON autocomplete response
     def opensearch
       respond_to do |format|
@@ -99,7 +99,7 @@ module Blacklight::Catalog
         end
       end
     end
-    
+
     # citation action
     def citation
       @response, @documents = get_solr_response_for_document_ids(params[:id])
@@ -109,14 +109,14 @@ module Blacklight::Catalog
       end
     end
 
-    
+
     # Email Action (this will render the appropriate view on GET requests and process the form and send the email on POST requests)
     def email
       @response, @documents = get_solr_response_for_document_ids(params[:id])
-      
+
       if request.post? and validate_email_params
         email = RecordMailer.email_record(@documents, {:to => params[:to], :message => params[:message]}, url_options)
-        email.deliver 
+        email.deliver
 
         flash[:success] = I18n.t("blacklight.email.success")
 
@@ -132,11 +132,11 @@ module Blacklight::Catalog
       end
     end
 
-    
+
     # SMS action (this will render the appropriate view on GET requests and process the form and send the email on POST requests)
-    def sms 
+    def sms
       @response, @documents = get_solr_response_for_document_ids(params[:id])
-      
+
       if request.post? and validate_sms_params
         to = "#{params[:to].gsub(/[^\d]/, '')}@#{params[:carrier]}"
 
@@ -150,7 +150,7 @@ module Blacklight::Catalog
           format.js { render 'sms_sent' }
         end and return
       end
-        
+
       respond_to do |format|
         format.js { render :layout => false }
         format.html
@@ -159,15 +159,25 @@ module Blacklight::Catalog
 
     ##
     # Check if any search parameters have been set
-    # @return [Boolean] 
+    # @return [Boolean]
     def has_search_parameters?
       !params[:q].blank? or !params[:f].blank? or !params[:search_field].blank?
     end
-    
-    protected    
+
+    protected
     #
     # non-routable methods ->
     #
+
+    ##
+    # If the params specify a view, then store it in the session. If the params
+    # do not specifiy the view, set the view parameter to the value stored in the
+    # session. This enables a user with a session to do subsequent searches and have
+    # them default to the last used view.
+    def preferred_view
+      session[:preferred_view] = params[:view] if params[:view]
+      params[:view] ||= session[:preferred_view]
+    end
 
     ##
     # Render additional response formats, as provided by the blacklight configuration
