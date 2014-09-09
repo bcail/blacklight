@@ -58,36 +58,39 @@ module Blacklight::ConfigurationHelperBehavior
   ##
   # Look up the label for the index field
   def index_field_label document, field
-    label = index_fields(document)[field].label
+    field_config = index_fields(document)[field]
 
     solr_field_label(
-      label, 
+      (field_config.label if field_config),
       :"blacklight.search.fields.index.#{field}",
-      :"blacklight.search.fields.#{field}"
+      :"blacklight.search.fields.#{field}",
+      field.to_s.humanize
     )
   end
 
   ##
   # Look up the label for the show field
   def document_show_field_label document, field
-    label = document_show_fields(document)[field].label
-    
+    field_config = document_show_fields(document)[field]
+
     solr_field_label(
-      label, 
+      (field_config.label if field_config),
       :"blacklight.search.fields.show.#{field}",
-      :"blacklight.search.fields.#{field}"
+      :"blacklight.search.fields.#{field}",
+      field.to_s.humanize
     )
   end
 
   ##
   # Look up the label for the facet field
   def facet_field_label field
-    label = blacklight_config.facet_fields[field].label
+    field_config = blacklight_config.facet_fields[field]
 
     solr_field_label(
-      label, 
+      (field_config.label if field_config),
       :"blacklight.search.fields.facet.#{field}",
-      :"blacklight.search.fields.#{field}"
+      :"blacklight.search.fields.#{field}",
+      field.to_s.humanize
     )
   end
 
