@@ -10,6 +10,14 @@ describe BookmarksController do
       expect(JSON.parse(response.body)["bookmarks"]["count"]).to eq 1
     end
     
+    it "can create one by passing in bookmarks param" do
+      @params = ActionController::Parameters.new('bookmarks' => [{'document_id' => '2007020970', 'document_type' => 'SolrDocument'}], :format => :js)
+      xhr :post, :create, @params
+      expect(response).to be_success
+      expect(response.code).to eq "200"
+      expect(JSON.parse(response.body)["bookmarks"]["count"]).to eq 1
+    end
+
     it "has a 500 status code when create is not success" do
       allow(@controller).to receive_message_chain(:current_or_guest_user, :existing_bookmark_for).and_return(false)
       allow(@controller).to receive_message_chain(:current_or_guest_user, :persisted?).and_return(true)
